@@ -10,7 +10,7 @@ type OrderFAB struct {
 }
 
 type Order struct {
-	OrderedBy  string         `json:"ordered_by" binding:"required"`
+	OrderedBy  string
 	ShowtimeId int32          `json:"showtime_id" binding:"required"`
 	ShowDate   string         `json:"show_date" binding:"required"`
 	Note       string         `json:"note"`

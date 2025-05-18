@@ -30,33 +30,34 @@ func (s *SqlStore) CreateOrderTran(ctx context.Context, arg request.Order) error
 					Time:  showDate,
 					Valid: true,
 				},
-				Note: arg.Note,
+				Status: OrderStatusesPending,
+				Note:   arg.Note,
 			})
 		if err != nil {
 			return fmt.Errorf("failed to create order with showtime id (%d): %w", arg.ShowtimeId, err)
 		}
 
-		for _, v := range arg.Seats {
+		for _, seat := range arg.Seats {
 			err = q.CreateOrderSeat(ctx,
 				CreateOrderSeatParams{
 					OrderID: orderId,
-					SeatID:  v.SeatId,
+					SeatID:  seat.SeatId,
 				})
 			if err != nil {
-				return fmt.Errorf("failed to create seat order with id (%d): %v", v.SeatId, err)
+				return fmt.Errorf("failed to create seat order with id (%d): %v", seat.SeatId, err)
 			}
 		}
 
 		if len(arg.FABs) != 0 {
-			for _, v := range arg.FABs {
+			for _, fab := range arg.FABs {
 				err = q.CreateOrderFAB(ctx,
 					CreateOrderFABParams{
 						OrderID:  orderId,
-						FabID:    v.FABId,
-						Quantity: int32(v.Quantity),
+						FabID:    fab.FABId,
+						Quantity: int32(fab.Quantity),
 					})
 				if err != nil {
-					return fmt.Errorf("failed to create fab order with id (%d): %v", v.FABId, err)
+					return fmt.Errorf("failed to create fab order with id (%d): %v", fab.FABId, err)
 				}
 			}
 		}

@@ -21,16 +21,25 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int,
 	var showTimeSeatsRedisKey string = fmt.Sprintf("%s%d::%s", global.SHOWTIME_SEATS, arg.ShowtimeId, arg.ShowDate)
 	var showtimeSeats response.ShowtimeSeats
 
-	err := o.RedisClient.Get(showTimeSeatsRedisKey, &showtimeSeats)
+	err := o.RedisClient.Get(showTimeSeatsRedisKey, &showtimeSeats.Seats)
 	if err != nil {
-		return http.StatusNotFound, fmt.Errorf("showtime id (%d) and show date (%s) not foud with err: %v", arg.ShowtimeId, arg.ShowDate, err)
+		if err.Error() == fmt.Sprintf("key %s does not exist", showTimeSeatsRedisKey) {
+			return http.StatusNotFound, fmt.Errorf("showtime id (%d) or show date (%s) not foud", arg.ShowtimeId, arg.ShowDate)
+		}
+
+		return http.StatusInternalServerError, fmt.Errorf("failed to get value from redis with err: %w", err)
 	}
 
-	if err = o.validateSeats(arg.Seats, showtimeSeats); err != nil {
-		return http.StatusBadRequest, err
+	if status, err := o.validateSeats(arg.Seats, showtimeSeats); err != nil && status != http.StatusOK {
+		return status, err
 	}
 
 	err = o.SqlStore.CreateOrderTran(ctx, arg)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+
+	err = o.RedisClient.Delete(showTimeSeatsRedisKey)
 	if err != nil {
 		return http.StatusInternalServerError, err
 	}
