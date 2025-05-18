@@ -1,12 +1,9 @@
 package routers
 
 import (
-	"bmt_order_service/db/sqlc"
-	"bmt_order_service/global"
-	"bmt_order_service/internal/controllers"
-	"bmt_order_service/internal/implementations/order"
-	"bmt_order_service/internal/implementations/redis"
+	"bmt_order_service/internal/injectors"
 	"bmt_order_service/internal/middlewares"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,10 +12,12 @@ type OrderRouter struct {
 }
 
 func (o *OrderRouter) InitOrderRouter(router *gin.RouterGroup) {
-	sqlStore := sqlc.NewStore(global.Postgresql)
-	redisClient := redis.NewRedisClient()
-	orderService := order.NewOrderService(sqlStore, redisClient)
-	orderController := controllers.NewOrderController(orderService)
+	orderController, err := injectors.InitOrderController()
+	if err != nil {
+		log.Fatalf("failed to initialize OrderController: %v", err)
+		return
+	}
+
 	getFromHeaderMiddleware := middlewares.NewGetFromHeaderMiddleware()
 
 	orderRouter := router.Group("/order")
