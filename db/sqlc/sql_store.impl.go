@@ -2,8 +2,10 @@ package sqlc
 
 import (
 	"bmt_order_service/dto/request"
+	"bmt_order_service/global"
 	"bmt_order_service/utils/convertors"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -30,37 +32,53 @@ func (s *SqlStore) CreateOrderTran(ctx context.Context, arg request.Order) error
 					Time:  showDate,
 					Valid: true,
 				},
-				Status: OrderStatusesPending,
+				Status: OrderStatusesCreated,
 				Note:   arg.Note,
 			})
 		if err != nil {
 			return fmt.Errorf("failed to create order with showtime id (%d): %w", arg.ShowtimeId, err)
 		}
 
-		for _, seat := range arg.Seats {
-			err = q.CreateOrderSeat(ctx,
-				CreateOrderSeatParams{
-					OrderID: orderId,
-					SeatID:  seat.SeatId,
-				})
-			if err != nil {
-				return fmt.Errorf("failed to create seat order with id (%d): %v", seat.SeatId, err)
-			}
+		// for _, seat := range arg.Seats {
+		// 	err = q.CreateOrderSeat(ctx,
+		// 		CreateOrderSeatParams{
+		// 			OrderID: orderId,
+		// 			SeatID:  seat.SeatId,
+		// 		})
+		// 	if err != nil {
+		// 		return fmt.Errorf("failed to create seat order with id (%d): %v", seat.SeatId, err)
+		// 	}
+		// }
+
+		payloadBytes, err := json.Marshal(arg)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payload: %w", err)
 		}
 
-		if len(arg.FABs) != 0 {
-			for _, fab := range arg.FABs {
-				err = q.CreateOrderFAB(ctx,
-					CreateOrderFABParams{
-						OrderID:  orderId,
-						FabID:    fab.FABId,
-						Quantity: int32(fab.Quantity),
-					})
-				if err != nil {
-					return fmt.Errorf("failed to create fab order with id (%d): %v", fab.FABId, err)
-				}
-			}
+		err = q.CreateOutbox(ctx,
+			CreateOutboxParams{
+				AggregatedType: "ORDER",
+				AggregatedID:   orderId,
+				EventType:      global.ORDER_CREATED,
+				Payload:        payloadBytes,
+			})
+		if err != nil {
+			return fmt.Errorf("failed to create outbox: %w", err)
 		}
+
+		// if len(arg.FABs) != 0 {
+		// 	for _, fab := range arg.FABs {
+		// 		err = q.CreateOrderFAB(ctx,
+		// 			CreateOrderFABParams{
+		// 				OrderID:  orderId,
+		// 				FabID:    fab.FABId,
+		// 				Quantity: int32(fab.Quantity),
+		// 			})
+		// 		if err != nil {
+		// 			return fmt.Errorf("failed to create fab order with id (%d): %v", fab.FABId, err)
+		// 		}
+		// 	}
+		// }
 
 		return nil
 	})

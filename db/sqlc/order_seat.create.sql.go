@@ -12,20 +12,18 @@ import (
 const createOrderSeat = `-- name: CreateOrderSeat :exec
 INSERT INTO order_seats (
     order_id,
-    seat_id,
-    price
+    seat_id
 ) VALUES (
-    $1, $2, $3
+    $1, $2
 )
 `
 
 type CreateOrderSeatParams struct {
 	OrderID int32 `json:"order_id"`
 	SeatID  int32 `json:"seat_id"`
-	Price   int32 `json:"price"`
 }
 
 func (q *Queries) CreateOrderSeat(ctx context.Context, arg CreateOrderSeatParams) error {
-	_, err := q.db.Exec(ctx, createOrderSeat, arg.OrderID, arg.SeatID, arg.Price)
+	_, err := q.db.Exec(ctx, createOrderSeat, arg.OrderID, arg.SeatID)
 	return err
 }

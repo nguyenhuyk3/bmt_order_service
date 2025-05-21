@@ -14,10 +14,9 @@ import (
 type OrderStatuses string
 
 const (
-	OrderStatusesPending  OrderStatuses = "pending"
-	OrderStatusesCanceled OrderStatuses = "canceled"
-	OrderStatusesFailed   OrderStatuses = "failed"
-	OrderStatusesSuccess  OrderStatuses = "success"
+	OrderStatusesCreated OrderStatuses = "created"
+	OrderStatusesFailed  OrderStatuses = "failed"
+	OrderStatusesSuccess OrderStatuses = "success"
 )
 
 func (e *OrderStatuses) Scan(src interface{}) error {
@@ -60,14 +59,12 @@ type OrderFabs struct {
 	OrderID  int32 `json:"order_id"`
 	FabID    int32 `json:"fab_id"`
 	Quantity int32 `json:"quantity"`
-	Price    int32 `json:"price"`
 }
 
 type OrderSeats struct {
 	ID      int32 `json:"id"`
 	OrderID int32 `json:"order_id"`
 	SeatID  int32 `json:"seat_id"`
-	Price   int32 `json:"price"`
 }
 
 type Orders struct {
@@ -79,4 +76,13 @@ type Orders struct {
 	Note       string           `json:"note"`
 	CreatedAt  pgtype.Timestamp `json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `json:"updated_at"`
+}
+
+type Outboxes struct {
+	ID             pgtype.UUID      `json:"id"`
+	AggregatedType string           `json:"aggregated_type"`
+	AggregatedID   int32            `json:"aggregated_id"`
+	EventType      string           `json:"event_type"`
+	Payload        []byte           `json:"payload"`
+	CreatedAt      pgtype.Timestamp `json:"created_at"`
 }

@@ -1,8 +1,7 @@
 -- name: CreateOrderSeat :exec
 INSERT INTO order_seats (
     order_id,
-    seat_id,
-    price
+    seat_id
 ) VALUES (
-    $1, $2, $3
+    $1, $2
 );

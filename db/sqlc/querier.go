@@ -12,6 +12,7 @@ type Querier interface {
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (int32, error)
 	CreateOrderFAB(ctx context.Context, arg CreateOrderFABParams) error
 	CreateOrderSeat(ctx context.Context, arg CreateOrderSeatParams) error
+	CreateOutbox(ctx context.Context, arg CreateOutboxParams) error
 	GetOrderByTicketBooker(ctx context.Context, orderedBy string) ([]Orders, error)
 }
 

@@ -13,10 +13,9 @@ const createOrderFAB = `-- name: CreateOrderFAB :exec
 INSERT INTO order_fabs (
     order_id,
     fab_id,
-    quantity,
-    price
+    quantity
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3
 )
 `
 
@@ -24,15 +23,9 @@ type CreateOrderFABParams struct {
 	OrderID  int32 `json:"order_id"`
 	FabID    int32 `json:"fab_id"`
 	Quantity int32 `json:"quantity"`
-	Price    int32 `json:"price"`
 }
 
 func (q *Queries) CreateOrderFAB(ctx context.Context, arg CreateOrderFABParams) error {
-	_, err := q.db.Exec(ctx, createOrderFAB,
-		arg.OrderID,
-		arg.FabID,
-		arg.Quantity,
-		arg.Price,
-	)
+	_, err := q.db.Exec(ctx, createOrderFAB, arg.OrderID, arg.FabID, arg.Quantity)
 	return err
 }

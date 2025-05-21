@@ -2,8 +2,7 @@
 INSERT INTO order_fabs (
     order_id,
     fab_id,
-    quantity,
-    price
+    quantity
 ) VALUES (
-    $1, $2, $3, $4
+    $1, $2, $3
 );
