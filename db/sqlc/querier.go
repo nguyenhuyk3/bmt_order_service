@@ -14,6 +14,7 @@ type Querier interface {
 	CreateOrderSeat(ctx context.Context, arg CreateOrderSeatParams) error
 	CreateOutbox(ctx context.Context, arg CreateOutboxParams) error
 	GetOrderByTicketBooker(ctx context.Context, orderedBy string) ([]Orders, error)
+	UpdateOrderStatusByOrderId(ctx context.Context, arg UpdateOrderStatusByOrderIdParams) error
 }
 
 var _ Querier = (*Queries)(nil)

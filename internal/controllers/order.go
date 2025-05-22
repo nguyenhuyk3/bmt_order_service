@@ -36,11 +36,13 @@ func (o *OrderController) CreateOrder(c *gin.Context) {
 	orderedBy := c.GetString(global.X_USER_EMAIL)
 	req.OrderedBy = orderedBy
 
-	status, err := o.OrderService.CreateOrder(ctx, req)
+	orderId, status, err := o.OrderService.CreateOrder(ctx, req)
 	if err != nil {
 		responses.FailureResponse(c, status, err.Error())
 		return
 	}
 
-	responses.SuccessResponse(c, status, "add new order perform successfully", nil)
+	responses.SuccessResponse(c, status, "add new order perform successfully", gin.H{
+		"order_id": orderId,
+	})
 }

@@ -16,35 +16,53 @@ type orderService struct {
 	RedisClient services.IRedis
 }
 
+const (
+	fifteen_minutes = 15
+)
+
 // CreateOrder implements services.IOrder.
-func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int, error) {
+func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int32, int, error) {
 	var showTimeSeatsRedisKey string = fmt.Sprintf("%s%d::%s", global.SHOWTIME_SEATS, arg.ShowtimeId, arg.ShowDate)
 	var showtimeSeats response.ShowtimeSeats
 
 	err := o.RedisClient.Get(showTimeSeatsRedisKey, &showtimeSeats.Seats)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("key %s does not exist", showTimeSeatsRedisKey) {
-			return http.StatusNotFound, fmt.Errorf("showtime id (%d) or show date (%s) not foud", arg.ShowtimeId, arg.ShowDate)
+			return -1, http.StatusNotFound, fmt.Errorf("showtime id (%d) or show date (%s) not foud", arg.ShowtimeId, arg.ShowDate)
 		}
 
-		return http.StatusInternalServerError, fmt.Errorf("failed to get value from redis with err: %w", err)
+		return -1, http.StatusInternalServerError, fmt.Errorf("failed to get value from redis with err: %w", err)
 	}
 
 	if status, err := o.validateSeats(arg.Seats, showtimeSeats); err != nil && status != http.StatusOK {
-		return status, err
+		return -1, status, err
 	}
 
-	err = o.SqlStore.CreateOrderTran(ctx, arg)
+	orderId, err := o.SqlStore.CreateOrderTran(ctx, arg)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return -1, http.StatusInternalServerError, err
+	}
+
+	var orderRedisKey string = fmt.Sprintf("%s%d", global.ORDER, orderId)
+
+	err = o.RedisClient.Save(orderRedisKey,
+		request.SubOrder{
+			OrderId:    orderId,
+			ShowtimeId: arg.ShowtimeId,
+			Seats:      arg.Seats,
+			FABs:       arg.FABs,
+		},
+		fifteen_minutes)
+	if err != nil {
+		return -1, http.StatusInternalServerError, err
 	}
 
 	err = o.RedisClient.Delete(showTimeSeatsRedisKey)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		return -1, http.StatusInternalServerError, err
 	}
 
-	return http.StatusOK, nil
+	return orderId, http.StatusOK, nil
 }
 
 func NewOrderService(
