@@ -9,10 +9,21 @@ package injectors
 import (
 	"bmt_order_service/db/sqlc"
 	"bmt_order_service/internal/controllers"
+	"bmt_order_service/internal/implementations/message_broker/readers"
 	"bmt_order_service/internal/implementations/order"
 	"bmt_order_service/internal/implementations/redis"
 	"bmt_order_service/internal/injectors/provider"
 )
+
+// Injectors from message_broker.wire.go:
+
+func InitMessageBroker() (*readers.MessageBrokerReader, error) {
+	pool := provider.ProvidePgxPool()
+	iStore := sqlc.NewStore(pool)
+	iRedis := redis.NewRedisClient()
+	messageBrokerReader := readers.NewMessageBrokerReader(iStore, iRedis)
+	return messageBrokerReader, nil
+}
 
 // Injectors from order_controller.wire.go:
 

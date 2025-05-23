@@ -4,7 +4,6 @@ import (
 	"bmt_order_service/dto/request"
 	"bmt_order_service/global"
 	"bmt_order_service/utils/convertors"
-	"bmt_order_service/utils/generators"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -46,9 +45,11 @@ func (s *SqlStore) CreateOrderTran(ctx context.Context, arg request.Order) (int3
 		}
 
 		payloadBytes, err := json.Marshal(gin.H{
+			"order_id":    orderId,
 			"showtime_id": arg.ShowtimeId,
-			"seats":       arg.Seats,
 			"ordered_by":  arg.OrderedBy,
+			"seats":       arg.Seats,
+			"fabs":        arg.FABs,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to marshal payload: %w", err)
@@ -60,8 +61,8 @@ func (s *SqlStore) CreateOrderTran(ctx context.Context, arg request.Order) (int3
 		*/
 		err = q.CreateOutbox(ctx,
 			CreateOutboxParams{
-				AggregatedType: "ORDER",
-				AggregatedID:   generators.RandomInt32(),
+				AggregatedType: "ORDER_ID",
+				AggregatedID:   orderId,
 				EventType:      global.ORDER_CREATED,
 				Payload:        payloadBytes,
 			})
@@ -72,7 +73,11 @@ func (s *SqlStore) CreateOrderTran(ctx context.Context, arg request.Order) (int3
 		return nil
 	})
 
-	return finalOrderId, err
+	if err != nil {
+		return -1, err
+	}
+
+	return finalOrderId, nil
 }
 
 // CreateSubOrderTran implements IStore.
@@ -127,8 +132,8 @@ func (s *SqlStore) CreateSubOrderTran(ctx context.Context, arg request.SubOrder,
 		*/
 		err = q.CreateOutbox(ctx,
 			CreateOutboxParams{
-				AggregatedType: "ORDER",
-				AggregatedID:   generators.RandomInt32(),
+				AggregatedType: "ORDER_ID",
+				AggregatedID:   arg.OrderId,
 				EventType:      eventType,
 				Payload:        payloadBytes,
 			})

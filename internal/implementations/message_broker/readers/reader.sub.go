@@ -73,16 +73,18 @@ func (m *MessageBrokerReader) handleCreateSubOrder(messageData message.BMTPublic
 		if err != nil {
 			log.Printf("failed to create sub order tran (%s): %v", messageData.After.EventType, err)
 			return
+		} else {
+			log.Printf("create sub order tran (%s) successfully", messageData.After.EventType)
 		}
-		log.Printf("create sub order tran (%s) successfully", messageData.After.EventType)
 
 	case global.PAYMENT_FAILED:
 		err := m.SqlQuery.CreateSubOrderTran(m.Context, subOrder, false)
 		if err != nil {
 			log.Printf("failed to update sub order tran (%s): %v", messageData.After.EventType, err)
 			return
+		} else {
+			log.Printf("update sub order tran (%s) successfully", messageData.After.EventType)
 		}
-		log.Printf("update sub order tran (%s) successfully", messageData.After.EventType)
 
 	default:
 		log.Printf("unknown event type received: %s", messageData.After.EventType)

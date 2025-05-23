@@ -9,6 +9,7 @@ func Run() {
 	loadConfigs()
 	initPostgreSql()
 	initRedis()
+	initMessageBrokerReader()
 
 	r := initRouter()
 
