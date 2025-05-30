@@ -7,13 +7,17 @@ import (
 	"bmt_order_service/global"
 	"bmt_order_service/internal/services"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+
+	"product"
 )
 
 type orderService struct {
-	SqlStore    sqlc.IStore
-	RedisClient services.IRedis
+	SqlStore      sqlc.IStore
+	RedisClient   services.IRedis
+	ProductClient product.ProductClient
 }
 
 const (
@@ -22,6 +26,19 @@ const (
 
 // CreateOrder implements services.IOrder.
 func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int32, int, error) {
+	if len(arg.FABs) != 0 {
+		for _, fAB := range arg.FABs {
+			_, err := o.ProductClient.CheckFABExist(ctx, &product.CheckFABExistReq{FABId: fAB.FABId})
+			if err != nil {
+				if errors.Is(err, fmt.Errorf("fab with %d doesn't exist", fAB.FABId)) {
+					return -1, http.StatusNotFound, err
+				}
+
+				return -1, http.StatusInternalServerError, err
+			}
+		}
+	}
+
 	var showTimeSeatsRedisKey string = fmt.Sprintf("%s%d::%s", global.SHOWTIME_SEATS, arg.ShowtimeId, arg.ShowDate)
 	var showtimeSeats response.ShowtimeSeats
 
@@ -68,6 +85,7 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 func NewOrderService(
 	sqlStore sqlc.IStore,
 	redisClient services.IRedis,
+	productClient product.ProductClient,
 ) services.IOrder {
 	return &orderService{
 		SqlStore:    sqlStore,

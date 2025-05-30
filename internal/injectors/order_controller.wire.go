@@ -13,6 +13,7 @@ func InitOrderController() (*controllers.OrderController, error) {
 	wire.Build(
 		dbSet,
 		redisSet,
+		productClientSet,
 
 		order.NewOrderService,
 		controllers.NewOrderController,

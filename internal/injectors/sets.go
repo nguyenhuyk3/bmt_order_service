@@ -16,3 +16,7 @@ var dbSet = wire.NewSet(
 var redisSet = wire.NewSet(
 	redis.NewRedisClient,
 )
+
+var productClientSet = wire.NewSet(
+	provider.ProvideProductClient,
+)

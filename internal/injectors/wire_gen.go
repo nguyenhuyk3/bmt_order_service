@@ -31,7 +31,8 @@ func InitOrderController() (*controllers.OrderController, error) {
 	pool := provider.ProvidePgxPool()
 	iStore := sqlc.NewStore(pool)
 	iRedis := redis.NewRedisClient()
-	iOrder := order.NewOrderService(iStore, iRedis)
+	productClient := provider.ProvideProductClient()
+	iOrder := order.NewOrderService(iStore, iRedis, productClient)
 	orderController := controllers.NewOrderController(iOrder)
 	return orderController, nil
 }
