@@ -28,7 +28,10 @@ const (
 func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int32, int, error) {
 	if len(arg.FABs) != 0 {
 		for _, fAB := range arg.FABs {
-			_, err := o.ProductClient.CheckFABExist(ctx, &product.CheckFABExistReq{FABId: fAB.FABId})
+			// check if fab exists by calling product service to check
+			_, err := o.ProductClient.CheckFABExist(ctx, &product.CheckFABExistReq{
+				FABId: fAB.FABId,
+			})
 			if err != nil {
 				if errors.Is(err, fmt.Errorf("fab with %d doesn't exist", fAB.FABId)) {
 					return -1, http.StatusNotFound, err
@@ -42,6 +45,8 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 	var showTimeSeatsRedisKey string = fmt.Sprintf("%s%d::%s", global.SHOWTIME_SEATS, arg.ShowtimeId, arg.ShowDate)
 	var showtimeSeats response.ShowtimeSeats
 
+	// get all showtime seats from cache
+	// the reason this code is needed is because the user has to select a seat and then create an order
 	err := o.RedisClient.Get(showTimeSeatsRedisKey, &showtimeSeats.Seats)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("key %s does not exist", showTimeSeatsRedisKey) {
@@ -62,6 +67,7 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 
 	var orderRedisKey string = fmt.Sprintf("%s%d", global.ORDER, orderId)
 
+	// save this infor for payment service get this
 	err = o.RedisClient.Save(orderRedisKey,
 		request.SubOrder{
 			OrderId:    orderId,
@@ -88,7 +94,8 @@ func NewOrderService(
 	productClient product.ProductClient,
 ) services.IOrder {
 	return &orderService{
-		SqlStore:    sqlStore,
-		RedisClient: redisClient,
+		SqlStore:      sqlStore,
+		RedisClient:   redisClient,
+		ProductClient: productClient,
 	}
 }

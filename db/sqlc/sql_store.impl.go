@@ -56,7 +56,7 @@ func (s *SqlStore) CreateOrderTran(ctx context.Context, arg request.Order) (int3
 		}
 
 		/**
-		this message will be received by Showtime Service
+			this message will be received by Showtime Service
 		to change seat status available -> reserved
 		*/
 		err = q.CreateOutbox(ctx,

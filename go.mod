@@ -2,7 +2,7 @@ module bmt_order_service
 
 go 1.23.1
 
-replace product => ../proto/product
+replace product => ../bmt_proto/product
 
 require (
 	github.com/gin-gonic/gin v1.10.0
