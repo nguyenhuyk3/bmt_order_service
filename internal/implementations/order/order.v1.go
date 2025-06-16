@@ -12,23 +12,26 @@ import (
 	"net/http"
 
 	"product"
+	"showtime"
 )
 
 type orderService struct {
-	SqlStore      sqlc.IStore
-	RedisClient   services.IRedis
-	ProductClient product.ProductClient
+	SqlStore       sqlc.IStore
+	RedisClient    services.IRedis
+	ProductClient  product.ProductClient
+	ShowtimeClient showtime.ShowtimeClient
 }
 
 const (
 	fifteen_minutes = 15
+	sixty_minutes   = 60
 )
 
 // CreateOrder implements services.IOrder.
 func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int32, int, error) {
 	if len(arg.FABs) != 0 {
 		for _, fAB := range arg.FABs {
-			// check if fab exists by calling product service to check
+			// check if fab exists by calling product service (grpc) to check
 			_, err := o.ProductClient.CheckFABExist(ctx, &product.CheckFABExistReq{
 				FABId: fAB.FABId,
 			})
@@ -85,6 +88,36 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 		return -1, http.StatusInternalServerError, err
 	}
 
+	go func() {
+		seatIds := []int32{}
+
+		for _, seat := range arg.Seats {
+			seatIds = append(seatIds, seat.SeatId)
+		}
+
+		informationForTicket, _ := o.ShowtimeClient.GetSomeInformationForTicket(context.Background(),
+			&showtime.GetSomeInformationForTicketReq{
+				ShowtimeId: arg.ShowtimeId,
+				SeatIds:    seatIds,
+			})
+		film, _ := o.ProductClient.GetFilm(context.Background(),
+			&product.GetFilmReq{
+				FilmId: informationForTicket.FilmId,
+			})
+
+		_ = o.RedisClient.Save(
+			fmt.Sprintf("%s%d", global.TICKET_INFORMATION, orderId),
+			ticketInformation{
+				CinemaName: informationForTicket.CinemaName,
+				City:       informationForTicket.City,
+				RoomName:   informationForTicket.RoomName,
+				Seats:      informationForTicket.Seats,
+				FilmPoster: film.PosterUrl,
+				Title:      film.Title,
+				Duration:   film.Duration,
+			}, sixty_minutes)
+	}()
+
 	return orderId, http.StatusOK, nil
 }
 
@@ -92,10 +125,12 @@ func NewOrderService(
 	sqlStore sqlc.IStore,
 	redisClient services.IRedis,
 	productClient product.ProductClient,
+	showtimeClient showtime.ShowtimeClient,
 ) services.IOrder {
 	return &orderService{
-		SqlStore:      sqlStore,
-		RedisClient:   redisClient,
-		ProductClient: productClient,
+		SqlStore:       sqlStore,
+		RedisClient:    redisClient,
+		ProductClient:  productClient,
+		ShowtimeClient: showtimeClient,
 	}
 }

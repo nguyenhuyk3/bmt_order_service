@@ -7,6 +7,16 @@ import (
 	"net/http"
 )
 
+type ticketInformation struct {
+	CinemaName string `json:"cinema_name" binding:"required"`
+	City       string `json:"city" binding:"required"`
+	RoomName   string `json:"room_name" binding:"required"`
+	Seats      string `json:"seats" binding:"required"`
+	FilmPoster string `json:"film_poster" binding:"required"`
+	Title      string `json:"title" binding:"required"`
+	Duration   string `json:"duration" binding:"required"`
+}
+
 func (o *orderService) validateSeats(orderSeats []request.OrderSeatReq, availableSeats response.ShowtimeSeats) (int, error) {
 	seatStatusMap := make(map[int32]string)
 	for _, s := range availableSeats.Seats {

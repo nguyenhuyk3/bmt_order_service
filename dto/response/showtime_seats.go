@@ -1,6 +1,6 @@
 package response
 
-import "time"
+import "github.com/jackc/pgx/v5/pgtype"
 
 type showtimeSeat struct {
 	Id         int32  `json:"id"`
@@ -9,7 +9,7 @@ type showtimeSeat struct {
 	Status     string `json:"status"`
 	BookedBy   string `json:"booked_by"`
 	// CreatedAt  time.Time  `json:"created_at"`
-	BookedAt *time.Time `json:"booked_at"`
+	BookedAt pgtype.Timestamp `json:"booked_at"`
 }
 
 type ShowtimeSeats struct {

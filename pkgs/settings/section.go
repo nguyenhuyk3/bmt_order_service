@@ -12,7 +12,9 @@ type serviceSetting struct {
 }
 
 type serverSetting struct {
-	ServerPort string `mapstructure:"SERVER_PORT"`
+	ServerPort            string `mapstructure:"SERVER_PORT"`
+	ProductRPCServerPort  string `mapstructure:"PRODUCT_RPC_SERVER_PORT"`
+	ShowtimeRPCServerPort string `mapstructure:"SHOWTIME_RPC_SERVER_PORT"`
 }
 
 type postgreSetting struct {

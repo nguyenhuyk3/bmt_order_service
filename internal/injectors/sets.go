@@ -20,3 +20,7 @@ var redisSet = wire.NewSet(
 var productClientSet = wire.NewSet(
 	provider.ProvideProductClient,
 )
+
+var showtimeClientSet = wire.NewSet(
+	provider.ProvideShowtimeClient,
+)

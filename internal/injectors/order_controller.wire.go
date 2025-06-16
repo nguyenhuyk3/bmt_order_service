@@ -14,6 +14,7 @@ func InitOrderController() (*controllers.OrderController, error) {
 		dbSet,
 		redisSet,
 		productClientSet,
+		showtimeClientSet,
 
 		order.NewOrderService,
 		controllers.NewOrderController,

@@ -32,7 +32,8 @@ func InitOrderController() (*controllers.OrderController, error) {
 	iStore := sqlc.NewStore(pool)
 	iRedis := redis.NewRedisClient()
 	productClient := provider.ProvideProductClient()
-	iOrder := order.NewOrderService(iStore, iRedis, productClient)
+	showtimeClient := provider.ProvideShowtimeClient()
+	iOrder := order.NewOrderService(iStore, iRedis, productClient, showtimeClient)
 	orderController := controllers.NewOrderController(iOrder)
 	return orderController, nil
 }
