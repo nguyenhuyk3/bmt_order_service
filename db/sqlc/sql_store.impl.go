@@ -98,19 +98,45 @@ func (s *SqlStore) CreateSubOrderTran(ctx context.Context, arg request.SubOrder,
 			return fmt.Errorf("failed to update order status: %w", err)
 		}
 
+		// if payment failed then just perform this step
 		if !isSuccess {
+			payloadBytes, err := json.Marshal(arg)
+			if err != nil {
+				return fmt.Errorf("failed to marshal payload: %w", err)
+			}
+
+			// write messagw to outboxes table for showtime service reading this
+			/*
+					because in this situation due to payment failure
+				then we will send ORDER_FAILED event type for showtime service to showtime service change seat status
+				from 'reserved' -> 'available'
+			*/
+			err = q.CreateOutbox(ctx,
+				CreateOutboxParams{
+					AggregatedType: "ORDER_ID",
+					AggregatedID:   arg.OrderId,
+					EventType:      eventType,
+					Payload:        payloadBytes,
+				})
+			if err != nil {
+				return fmt.Errorf("failed to create outbox (create sub order): %w", err)
+			}
+
 			return nil
 		}
 
+		// create order for seats
 		for _, seat := range arg.Seats {
-			if err := q.CreateOrderSeat(ctx, CreateOrderSeatParams{
-				OrderID: arg.OrderId,
-				SeatID:  seat.SeatId,
-			}); err != nil {
+			if err := q.CreateOrderSeat(ctx,
+				CreateOrderSeatParams{
+					OrderID: arg.OrderId,
+					SeatID:  seat.SeatId,
+				}); err != nil {
 				return fmt.Errorf("failed to create seat order with id (%d): %w", seat.SeatId, err)
 			}
 		}
 
+		// create order for fabs
 		for _, fab := range arg.FABs {
 			if err := q.CreateOrderFAB(ctx, CreateOrderFABParams{
 				OrderID:  arg.OrderId,
@@ -127,7 +153,7 @@ func (s *SqlStore) CreateSubOrderTran(ctx context.Context, arg request.SubOrder,
 		}
 
 		/**
-		this message will be received by Showtime Service
+			this message will be received by Showtime Service
 		to change seat status reserved -> available or booked based on envetType
 		*/
 		err = q.CreateOutbox(ctx,

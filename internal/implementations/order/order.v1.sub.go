@@ -10,8 +10,12 @@ import (
 type ticketInformation struct {
 	CinemaName string `json:"cinema_name" binding:"required"`
 	City       string `json:"city" binding:"required"`
+	Location   string `json:"location" binding:"required"`
 	RoomName   string `json:"room_name" binding:"required"`
+	ShowDate   string `json:"show_date" binding:"required"`
+	StartTime  string `json:"start_time" binding:"required"`
 	Seats      string `json:"seats" binding:"required"`
+	Genres     string `json:"genres" binding:"required"`
 	FilmPoster string `json:"film_poster" binding:"required"`
 	Title      string `json:"title" binding:"required"`
 	Duration   string `json:"duration" binding:"required"`

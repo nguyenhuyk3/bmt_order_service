@@ -7,7 +7,6 @@ import (
 	"bmt_order_service/global"
 	"bmt_order_service/internal/services"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -32,11 +31,12 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 	if len(arg.FABs) != 0 {
 		for _, fAB := range arg.FABs {
 			// check if fab exists by calling product service (grpc) to check
-			_, err := o.ProductClient.CheckFABExist(ctx, &product.CheckFABExistReq{
-				FABId: fAB.FABId,
-			})
+			_, err := o.ProductClient.CheckFABExist(ctx,
+				&product.CheckFABExistReq{
+					FABId: fAB.FABId,
+				})
 			if err != nil {
-				if errors.Is(err, fmt.Errorf("fab with %d doesn't exist", fAB.FABId)) {
+				if err.Error() == fmt.Sprintf("rpc error: code = Unknown desc = fab with %d doesn't exist", fAB.FABId) {
 					return -1, http.StatusNotFound, err
 				}
 
@@ -68,17 +68,17 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 		return -1, http.StatusInternalServerError, err
 	}
 
-	var orderRedisKey string = fmt.Sprintf("%s%d", global.ORDER, orderId)
-
 	// save this infor for payment service get this
-	err = o.RedisClient.Save(orderRedisKey,
+	err = o.RedisClient.Save(
+		fmt.Sprintf("%s%d", global.ORDER, orderId),
 		request.SubOrder{
 			OrderId:    orderId,
 			ShowtimeId: arg.ShowtimeId,
 			Seats:      arg.Seats,
 			FABs:       arg.FABs,
 		},
-		fifteen_minutes)
+		fifteen_minutes,
+	)
 	if err != nil {
 		return -1, http.StatusInternalServerError, err
 	}
@@ -95,7 +95,8 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 			seatIds = append(seatIds, seat.SeatId)
 		}
 
-		informationForTicket, _ := o.ShowtimeClient.GetSomeInformationForTicket(context.Background(),
+		informationForTicket, _ := o.ShowtimeClient.GetSomeInformationForTicket(
+			context.Background(),
 			&showtime.GetSomeInformationForTicketReq{
 				ShowtimeId: arg.ShowtimeId,
 				SeatIds:    seatIds,
@@ -110,8 +111,12 @@ func (o *orderService) CreateOrder(ctx context.Context, arg request.Order) (int3
 			ticketInformation{
 				CinemaName: informationForTicket.CinemaName,
 				City:       informationForTicket.City,
+				Location:   informationForTicket.Location,
 				RoomName:   informationForTicket.RoomName,
+				ShowDate:   informationForTicket.ShowDate,
+				StartTime:  informationForTicket.StartTime,
 				Seats:      informationForTicket.Seats,
+				Genres:     film.Genres,
 				FilmPoster: film.PosterUrl,
 				Title:      film.Title,
 				Duration:   film.Duration,

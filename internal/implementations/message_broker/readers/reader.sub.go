@@ -54,6 +54,7 @@ func (m *MessageBrokerReader) processMessage(topic string, value []byte) {
 }
 
 func (m *MessageBrokerReader) handleCreateSubOrder(messageData message.BMTPublicOutboxesMsg) {
+	// this is data when pay successfully and written to outboxes table at payment service
 	var payload message.PayloadPaymentData
 	if err := json.Unmarshal([]byte(messageData.After.Payload), &payload); err != nil {
 		log.Printf("failed to parse payload (%s): %v", messageData.After.EventType, err)
@@ -62,6 +63,7 @@ func (m *MessageBrokerReader) handleCreateSubOrder(messageData message.BMTPublic
 
 	var orderRedisKey string = fmt.Sprintf("%s%d", global.ORDER, payload.OrderId)
 	var subOrder request.SubOrder
+
 	if err := m.RedisClient.Get(orderRedisKey, &subOrder); err != nil {
 		log.Printf("failed to get data with key %s", orderRedisKey)
 		return
@@ -75,6 +77,8 @@ func (m *MessageBrokerReader) handleCreateSubOrder(messageData message.BMTPublic
 			return
 		} else {
 			log.Printf("create sub order tran (%s) successfully", messageData.After.EventType)
+
+			_ = m.RedisClient.Delete(orderRedisKey)
 		}
 
 	case global.PAYMENT_FAILED:
@@ -84,6 +88,8 @@ func (m *MessageBrokerReader) handleCreateSubOrder(messageData message.BMTPublic
 			return
 		} else {
 			log.Printf("update sub order tran (%s) successfully", messageData.After.EventType)
+
+			_ = m.RedisClient.Delete(orderRedisKey)
 		}
 
 	default:
